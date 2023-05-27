@@ -13,8 +13,6 @@ class ImdbItem(scrapy.Item):
     stars = scrapy.Field()
     rating = scrapy.Field()
     volume = scrapy.Field()
-    # storyline = scrapy.Field()
-    # gross_us_canada = scrapy.Field()
 
 
 class ImdbSpider(scrapy.Spider):
@@ -26,11 +24,10 @@ class ImdbSpider(scrapy.Spider):
     ]
     custom_settings = {'FEED_FORMAT': 'csv', 'FEED_URI': 'IMDB.csv',
                        'FEED_EXPORT_ENCODING': 'utf-8',
-                       'FEED_EXPORT_FIELDS': ['id', 'title', 'rating', 'volume', 'year', 'parental_guide', 'runtime_m',
+                       'FEED_EXPORT_FIELDS': ['id', 'title', 'rating', 'volume', 'year', 'parental_guide', 'runtime',
                                               'genres',
                                               'director', 'writers',
-                                              'stars', 'storyline', 'gross_us_canada', 'director_id', 'writers_id',
-                                              'stars_id',
+                                              'stars'
                                               ]
                        }
 
@@ -43,32 +40,32 @@ class ImdbSpider(scrapy.Spider):
 
         # Movie's Id
         id_movie = response.xpath(
-            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[2]/div[1]//@href').get()
-        item['id'] = id_movie.split('/')[2]
+            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[2]/div[1]//@href').extract()
+        item['id'] = id_movie[-1].split('/')[2]
 
         # Movies
         item['title'] = response.xpath(
-            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[2]/div[1]/h1/span/text()').get()
-
+            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[2]/div[1]/h1/span/text()').extract()
+        # Year
         item['year'] = response.xpath(
-            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[2]/div[1]/ul/li[1]/a/text()').get()
+            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[2]/div[1]/ul/li[1]/a/text()').extract()
 
         item['parental_guide'] = response.xpath(
-            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[2]/div[1]/ul/li[2]/a/text()').get()
+            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[2]/div[1]/ul/li[2]/a/text()').extract()
 
-        # give time's format type is [h m] and change format to minutes
-        time = response.xpath(
-            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[2]/div[1]/ul/li[3]/text()').get()
-        h, m = time.split(' ')
-        item['runtime'] = int(h.split('h')[0]) * 60 + int(m.split('m')[0])
+        # give time's format type is [h m]
+        item['runtime'] = response.xpath(
+            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[2]/div[1]/ul/li[3]/text()').extract()
 
-        item['genres'] = ','.join(response.xpath(
-            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[3]/div[2]/div[1]/section/div[1]/div[2]/a/span/text()').getall())
+        # Movie's Genres
+        item['genres'] = response.xpath(
+            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[3]/div[2]/div[1]/section/div[1]/div[2]/a/span/text()').extract()
 
+        # Director
         director_list = response.xpath(
-            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[3]/div[2]/div[1]/section/div[2]/div/ul/li[1]/div/ul/li/a/text()').getall()
+            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[3]/div[2]/div[1]/section/div[2]/div/ul/li[1]/div/ul/li/a/text()').extract()
         id_director_list = response.xpath(
-            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[3]/div[2]/div[1]/section/div[2]/div/ul/li[1]/div/ul/li/a/@href').getall()
+            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[3]/div[2]/div[1]/section/div[2]/div/ul/li[1]/div/ul/li/a/@href').extract()
 
         temp = []
         for i, director in enumerate(director_list):
@@ -76,23 +73,24 @@ class ImdbSpider(scrapy.Spider):
             temp.append(f"{director_list[i]}|{id_director}")
         item['director'] = ','.join(temp)
 
-        item['writers'] = ','.join(response.xpath(
-            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[3]/div[2]/div[1]/section/div[2]/div/ul/li[2]/div/ul/li/a/text()').getall())
+        # Writers
+        item['writers'] = response.xpath(
+            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[3]/div[2]/div[1]/section/div[2]/div/ul/li[2]/div/ul/li/a/text()').extract()
 
-        item['stars'] = ','.join(response.xpath(
-            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[3]/div[2]/div[1]/section/div[2]/div/ul/li[3]/div/ul/li/a/text()').getall())
+        # Stars
+        item['stars'] = response.xpath(
+            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[3]/div[2]/div[1]/section/div[2]/div/ul/li[3]/div/ul/li/a/text()').extract()
+
+        # Rating
         item['rating'] = response.xpath(
-            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[2]/div[2]/div/div[1]/a/span/div/div[2]/div[1]/span[1]/text()').get()
+            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[2]/div[2]/div/div[1]/a/span/div/div[2]/div[1]/span[1]/text()').extract()
+
+        # Volume
         volume = response.xpath(
-            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[2]/div[2]/div/div[1]/a/span/div/div[2]/div[3]/text()').get()
-        if volume[-1] == 'M':
-            item['volume'] = int(float(volume.split("M"))*1000000)
+            '//*[@id="__next"]/main/div/section[1]/section/div[3]/section/section/div[2]/div[2]/div/div[1]/a/span/div/div[2]/div[3]/text()').extract()
+        if volume[-1][-1] == 'M':
+            item['volume'] = int(float(volume[-1].split("M")[0]) * 1000000)
         else:
-            item['volume'] = int(float(volume.split("K")) * 1000)
-        # item['storyline'] = response.xpath(
-        #     '//*[@id="__next"]/main/div/section[1]/div/section/div/div[1]/section[6]/div[2]/div[1]/div/div/text()').get()
-        #
-        # item['gross_us_canada'] = response.xpath(
-        #     '//*[@id="__next"]/main/div/section[1]/div/section/div/div[1]/section[13]/div[2]/ul/li[2]/div/ul/li/span/text()').get()
+            item['volume'] = int(float(volume[-1].split("K")[0]) * 1000)
 
         return item
